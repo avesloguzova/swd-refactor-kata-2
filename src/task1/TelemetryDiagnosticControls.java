@@ -12,6 +12,10 @@ public class TelemetryDiagnosticControls
     telemetryClient = new TelemetryClient();
   }
 
+  public TelemetryDiagnosticControls(TelemetryClient telemetryClient) {
+    this.telemetryClient = telemetryClient;
+  }
+
   public String getDiagnosticInfo(){
     return diagnosticInfo;
   }
@@ -22,23 +26,38 @@ public class TelemetryDiagnosticControls
 
   public void checkTransmission() throws Exception
   {
-    diagnosticInfo = "";
+    disconnectWithClient();
 
-    telemetryClient.disconnect();
+    if(!tryConnectClient()){
+      throw new Exception("Unable to connect.");
+    }
+    sendDiagnosticMessage();
+    diagnosticInfo = receiveDiagnosticInfo();
+  }
 
+  public String receiveDiagnosticInfo() {
+    return telemetryClient.receive();
+  }
+
+  public void sendDiagnosticMessage() {
+    telemetryClient.send(TelemetryClient.DIAGNOSTIC_MESSAGE);
+  }
+
+  public boolean tryConnectClient()  {
     int retryLeft = 3;
-    while (telemetryClient.getOnlineStatus() == false && retryLeft > 0)
+    while (!telemetryClient.getOnlineStatus() && retryLeft > 0)
     {
       telemetryClient.connect(DiagnosticChannelConnectionString);
       retryLeft -= 1;
     }
 
-    if(telemetryClient.getOnlineStatus() == false)
-    {
-      throw new Exception("Unable to connect.");
-    }
-
-    telemetryClient.send(TelemetryClient.DIAGNOSTIC_MESSAGE);
-    diagnosticInfo = telemetryClient.receive();
+    return telemetryClient.getOnlineStatus();
   }
+
+  public void disconnectWithClient() {
+    diagnosticInfo = "";
+
+    telemetryClient.disconnect();
+  }
+
 }

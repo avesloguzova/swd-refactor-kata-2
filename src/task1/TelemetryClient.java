@@ -6,8 +6,8 @@ public class TelemetryClient
 {
   public static final String DIAGNOSTIC_MESSAGE = "AT#UD";
 
-  private boolean onlineStatus;
-  private String diagnosticMessageResult = "";
+  protected boolean onlineStatus;
+  protected String diagnosticMessageResult = "";
 
   private final Random connectionEventsSimulator = new Random(42);
 
@@ -41,7 +41,7 @@ public class TelemetryClient
       throw new IllegalArgumentException();
     }
 
-    if (message == DIAGNOSTIC_MESSAGE)
+    if (message.equals(DIAGNOSTIC_MESSAGE))
     {
       // simulate a status report
       diagnosticMessageResult =

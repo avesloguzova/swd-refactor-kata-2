@@ -3,30 +3,39 @@ package task3;
 import java.util.List;
 
 public class Coordinates {
+  private final Point xValue;
+  private final Point yValue;
+  private Direction direction;
+  private final List<Obstacle> obstaclesValue;
+  private List<Obstacle> Obstacles;
+
   public Point getX() {
-    throw new UnsupportedOperationException();
+    return xValue;
   }
 
   public Point getY() {
-    throw new UnsupportedOperationException();
+    return yValue;
   }
 
   public void setDirection(Direction value) {
-    throw new UnsupportedOperationException();
+    direction = value;
   }
   public Direction getDirection() {
     throw new UnsupportedOperationException();
   }
 
   public void setObstacles(List<Obstacle> value) {
-    throw new UnsupportedOperationException();
+    Obstacles = value;
   }
 
   public Coordinates(Point xValue,
                      Point yValue,
                      Direction directionValue,
                      List<Obstacle> obstaclesValue) {
-    throw new UnsupportedOperationException();
+    this.xValue = xValue;
+    this.yValue = yValue;
+    direction = directionValue;
+    this.obstaclesValue = obstaclesValue;
   }
 
   @Override

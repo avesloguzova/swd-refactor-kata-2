@@ -1,69 +1,59 @@
 package task2;
 
-import java.util.Enumeration;
-import java.util.Vector;
+import java.util.ArrayList;
+import java.util.List;
 
-public class Customer
-{
-    public Customer (String name) {
+public class Customer {
+    private List<Rental> rentals = new ArrayList<>();
+    private String name;
+
+    public Customer(String name) {
         this.name = name;
     }
 
-    public void addRental (Rental rental) {
-        rentals.addElement (rental);
+    public void addRental(Movie movie, int days) {
+        rentals.add(new Rental(movie, days));
     }
 
-    public String getName () {
+
+    public String getName() {
         return name;
     }
 
-    public String statement () {
-        double              totalAmount             = 0;
-        int                 frequentRenterPoints    = 0;
-        Enumeration         rentals                 = this.rentals.elements ();
-        String              result                  = "Rental Record for " + getName () + "\n";
+    public String statement() {
+        double totalAmount = 0;
+        int frequentRenterPoints = 0;
 
-        while (rentals.hasMoreElements ()) {
-            double      thisAmount = 0;
-            Rental      each = (Rental)rentals.nextElement ();
+        StringBuilder resultBuilder = new StringBuilder();
+        appendHeader(resultBuilder);
 
-            // determines the amount for each line
-            switch (each.getMovie ().getPriceCode ()) {
-                case Movie.REGULAR:
-                    thisAmount += 2;
-                    if (each.getDaysRented () > 2)
-                        thisAmount += (each.getDaysRented () - 2) * 1.5;
-                    break;
-                case Movie.NEW_RELEASE:
-                    thisAmount += each.getDaysRented () * 3;
-                    break;
-                case Movie.CHILDRENS:
-                    thisAmount += 1.5;
-                    if (each.getDaysRented () > 3)
-                        thisAmount += (each.getDaysRented () - 3) * 1.5;
-                    break;
-            }
+        for (Rental rental : rentals) {
+            double amount = rental.getAmount();
 
-            frequentRenterPoints++;
+            appendRentalInfo(resultBuilder, rental.getMovie().getTitle(), amount);
 
-            if (each.getMovie ().getPriceCode () == Movie.NEW_RELEASE
-                    && each.getDaysRented () > 1)
-                frequentRenterPoints++;
-
-            result += "\t" + each.getMovie ().getTitle () + "\t"
-                                + String.valueOf (thisAmount) + "\n";
-            totalAmount += thisAmount;
-
+            frequentRenterPoints += rental.getFrequentRenterPoints();
+            totalAmount += amount;
         }
+        appendTotalInfo(totalAmount, frequentRenterPoints, resultBuilder);
 
-        result += "You owed " + String.valueOf (totalAmount) + "\n";
-        result += "You earned " + String.valueOf (frequentRenterPoints) + " frequent renter points\n";
+        return resultBuilder.toString();
+    }
 
+    public void appendTotalInfo(double totalAmount, int frequentRenterPoints, StringBuilder resultBuilder) {
+        resultBuilder.append("You owed ").append(String.valueOf(totalAmount)).append(System.lineSeparator());
+        resultBuilder.append("You earned ").append(String.valueOf(frequentRenterPoints));
+        resultBuilder.append(" frequent renter points").append(System.lineSeparator());
+    }
 
-        return result;
+    public void appendRentalInfo(StringBuilder resultBuilder, String movieTitle, double amount) {
+        resultBuilder.append('\t').append(movieTitle).append('\t');
+        resultBuilder.append(String.valueOf(amount)).append(System.lineSeparator());
+    }
+
+    public void appendHeader(StringBuilder resultBuilder) {
+        resultBuilder.append("Rental Record for ").append(name).append('\n');
     }
 
 
-    private String name;
-    private Vector rentals = new Vector ();
 }
