@@ -2,64 +2,85 @@ package task1;
 
 import org.junit.Before;
 import org.junit.Test;
-import task1.mock.TelemetryClientStateMock;
 
-import static org.mockito.Mockito.*;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.*;
 
 public class TelemetryDiagnosticControlsTest {
+    private static final String TEST_DIAGNOSTIC_INFO = "OK";
+    private TelemetryClient clientMock;
+    private TelemetryDiagnosticControls telemetryDiagnosticControls;
 
-    @Test
-    public void testSuccessConnect() throws Exception {
-        TelemetryClient mock = mock(TelemetryClient.class);
-        when(mock.getOnlineStatus()).thenReturn(true);
-        assertTrue(new TelemetryDiagnosticControls(mock).tryConnectClient());
+    @Before
+    public void init() {
+        clientMock = mock(TelemetryClient.class);
+        telemetryDiagnosticControls = new TelemetryDiagnosticControls(clientMock);
+        when(clientMock.getOnlineStatus()).thenReturn(false).thenReturn(true);
     }
 
     @Test
-    public void testFailConnect() throws Exception {
-        TelemetryClient mock = mock(TelemetryClient.class);
-        when(mock.getOnlineStatus()).thenReturn(false);
-        assertFalse(new TelemetryDiagnosticControls(mock).tryConnectClient());
-    }
-
-
-
-    @Test
-    public void testDisconnect() throws Exception {
-        TelemetryClientStateMock telemetryClient = new TelemetryClientStateMock();
-        telemetryClient.setOnlineStatus(true);
-        TelemetryDiagnosticControls telemetryDiagnosticControls = new TelemetryDiagnosticControls(telemetryClient);
-        telemetryDiagnosticControls.disconnectWithClient();
-        assertFalse(telemetryClient.getOnlineStatus());
+    public void testDisconnectBeforeCheckingTransmission() throws Exception {
+        doThrow(new RuntimeException()).when(clientMock).disconnect();
+        try {
+            telemetryDiagnosticControls.checkTransmission();
+        } catch (RuntimeException e) {
+            verify(clientMock).disconnect();
+            verify(clientMock, never()).connect(TelemetryDiagnosticControls.DiagnosticChannelConnectionString);
+        }
     }
 
     @Test
-    public void testSendDiagnosticMessage() throws Exception {
-        TelemetryClientStateMock telemetryClient = new TelemetryClientStateMock();
-        telemetryClient.setOnlineStatus(true);//success connection
-        TelemetryDiagnosticControls telemetryDiagnosticControls = new TelemetryDiagnosticControls(telemetryClient);
-        telemetryDiagnosticControls.sendDiagnosticMessage();
-        assertEquals(TelemetryClientStateMock.MOKED_DIAGNOSTIC_RESULT, telemetryClient.receive());
-    }
-
-    @Test
-    public void testRecieveDiagnosticMessage() throws Exception {
-        TelemetryClient mock = mock(TelemetryClient.class);
-        when(mock.receive()).thenReturn(TelemetryClientStateMock.MOKED_DIAGNOSTIC_RESULT);
-        assertEquals(TelemetryClientStateMock.MOKED_DIAGNOSTIC_RESULT,new TelemetryDiagnosticControls().receiveDiagnosticInfo());
-
-    }
-
-    @Test
-    public void testcheckTransmission() throws Exception {
-        TelemetryClientStateMock telemetryClient = new TelemetryClientStateMock();
-        telemetryClient.setOnlineStatus(true);//success connection
-        TelemetryDiagnosticControls telemetryDiagnosticControls = new TelemetryDiagnosticControls(telemetryClient);
+    public void testSuccessConnection() throws Exception {
         telemetryDiagnosticControls.checkTransmission();
-        assertEquals(TelemetryClientStateMock.MOKED_DIAGNOSTIC_RESULT,telemetryDiagnosticControls.getDiagnosticInfo());
-
+        verify(clientMock).connect(TelemetryDiagnosticControls.DiagnosticChannelConnectionString);
     }
+
+    @Test(expected = TelemetryClientConnectionException.class)
+    public void testFailConnection() throws Exception {
+        when(clientMock.getOnlineStatus()).thenReturn(false);
+        telemetryDiagnosticControls.checkTransmission();
+    }
+
+    @Test
+    public void testSuccessConnectionSecondAttempt() throws Exception {
+        when(clientMock.getOnlineStatus()).thenReturn(false).thenReturn(false).thenReturn(true);
+        telemetryDiagnosticControls.checkTransmission();
+        verify(clientMock, times(2)).connect(TelemetryDiagnosticControls.DiagnosticChannelConnectionString);
+    }
+
+    @Test
+    public void testSuccessConnectionThirdAttempt() throws Exception {
+        when(clientMock.getOnlineStatus()).thenReturn(false).thenReturn(false).thenReturn(false).thenReturn(true);
+        telemetryDiagnosticControls.checkTransmission();
+        verify(clientMock, times(3)).connect(TelemetryDiagnosticControls.DiagnosticChannelConnectionString);
+    }
+
+    @Test
+    public void testSendMessage() throws Exception {
+        telemetryDiagnosticControls.checkTransmission();
+        verify(clientMock).send(TelemetryClient.DIAGNOSTIC_MESSAGE);
+    }
+
+    @Test
+    public void testReceiveMessage() throws Exception {
+        when(clientMock.receive()).thenReturn(TEST_DIAGNOSTIC_INFO);
+        telemetryDiagnosticControls.checkTransmission();
+
+        verify(clientMock).receive();
+        assertEquals(telemetryDiagnosticControls.getDiagnosticInfo(), TEST_DIAGNOSTIC_INFO);
+    }
+
+    @Test
+    public void testSuccessCheckTransmission() throws Exception {
+        when(clientMock.receive()).thenReturn(TEST_DIAGNOSTIC_INFO);
+        telemetryDiagnosticControls.checkTransmission();
+
+        verify(clientMock).disconnect();
+        verify(clientMock).connect(TelemetryDiagnosticControls.DiagnosticChannelConnectionString);
+        verify(clientMock).send(TelemetryClient.DIAGNOSTIC_MESSAGE);
+        verify(clientMock).receive();
+        assertEquals(TEST_DIAGNOSTIC_INFO, telemetryDiagnosticControls.getDiagnosticInfo());
+    }
+
+
 }

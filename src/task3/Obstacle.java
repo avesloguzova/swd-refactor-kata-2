@@ -1,7 +1,16 @@
 package task3;
 
 public class Obstacle {
-  public Obstacle(final int x, final int y) {
-    throw new UnsupportedOperationException();
+
+
+  private final Point coordinates;
+
+  public Obstacle(Point coordinates) {
+
+    this.coordinates = coordinates;
+  }
+
+  public Point getCoordinates() {
+    return coordinates;
   }
 }
